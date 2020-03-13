@@ -21,11 +21,21 @@ const db = admin.initializeApp().firestore();
 exports.calculateCart = functions
     .firestore.document("carts/{cartId}/items/{itemId}")
     .onWrite(async (change, context) => {
-      let totalPrice = 125.98;
-      let itemCount = 8;
       try {
+        const itemRef = db.collection('items').doc(context.params.itemId);
+        const itemData = await itemRef.get();
+        let itemPrice = Number(itemData.data().price);
 
         const cartRef = db.collection("carts").doc(context.params.cartId);
+        const cartData = await cartRef.get();
+        let {totalPrice, itemCount} = cartData.data();
+        if(totalPrice === undefined) {
+          totalPrice = itemPrice;
+          itemCount = 1;
+        } else {
+          totalPrice += itemPrice;
+          itemCount += 1;
+        }
 
         return cartRef.update({
           totalPrice,
